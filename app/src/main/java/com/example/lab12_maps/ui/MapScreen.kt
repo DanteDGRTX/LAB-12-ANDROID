@@ -91,6 +91,14 @@ fun MapScreen() {
                 ),
                 durationMs = 2_500,
             )
+            delay(1_000)
+            cameraPositionState.animate(
+                update = com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(
+                    arequipaLocation,
+                    11.7f,
+                ),
+                durationMs = 2_500,
+            )
         }
     }
 
@@ -182,5 +190,6 @@ private fun Context.bitmapFromVector(@DrawableRes drawableId: Int): Bitmap {
         drawable.draw(canvas)
     }
 }
+
 
 
