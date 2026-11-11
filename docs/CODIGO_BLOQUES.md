@@ -232,3 +232,53 @@ private fun Context.bitmapFromVector(@DrawableRes drawableId: Int): Bitmap {
 
 Maps Compose provides composables for polylines and polygons. See the [Google Maps Compose project documentation](https://github.com/googlemaps/android-maps-compose) and Google's [polylines and shapes documentation](https://developers.google.com/maps/documentation/android-sdk/shapes#polylines).
 
+
+## Ejercicio de desarrollo 1 — Cambiar el tipo de mapa
+
+Maps Compose permite cambiar el mapa en ejecución mediante `MapProperties(mapType = ...)`. El siguiente ejemplo conserva el tipo seleccionado en estado Compose y ofrece Normal, Satélite, Terreno e Híbrido:
+
+```kotlin
+private data class MapTypeOption(val label: String, val type: MapType)
+
+private val mapTypeOptions = listOf(
+    MapTypeOption("Normal", MapType.NORMAL),
+    MapTypeOption("Satélite", MapType.SATELLITE),
+    MapTypeOption("Terreno", MapType.TERRAIN),
+    MapTypeOption("Híbrido", MapType.HYBRID),
+)
+
+@Composable
+fun MapScreen() {
+    var selectedMapType by remember { mutableStateOf(MapType.NORMAL) }
+    var mapTypeMenuExpanded by remember { mutableStateOf(false) }
+
+    Box(Modifier.fillMaxSize()) {
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            properties = MapProperties(mapType = selectedMapType),
+        )
+
+        Box(Modifier.align(Alignment.TopEnd).padding(16.dp)) {
+            Button(onClick = { mapTypeMenuExpanded = true }) {
+                Text("Tipo de mapa: ${mapTypeOptions.first { it.type == selectedMapType }.label}")
+            }
+            DropdownMenu(
+                expanded = mapTypeMenuExpanded,
+                onDismissRequest = { mapTypeMenuExpanded = false },
+            ) {
+                mapTypeOptions.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option.label) },
+                        onClick = {
+                            selectedMapType = option.type
+                            mapTypeMenuExpanded = false
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+```
+
+La documentación del [Maps SDK para Android](https://developers.google.com/maps/documentation/android-sdk/configure-map) describe los tipos de mapa y sus diferencias. En este proyecto se actualizan mediante las propiedades de `GoogleMap` de [Maps Compose](https://github.com/googlemaps/android-maps-compose).
