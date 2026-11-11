@@ -28,6 +28,7 @@ import com.google.maps.android.compose.Polygon
 import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
+import kotlinx.coroutines.delay
 
 private val arequipaLocation = LatLng(-16.4040102, -71.559611)
 private val yuraLocation = LatLng(-16.2520984, -71.6836503)
@@ -79,8 +80,16 @@ fun MapScreen() {
             )
             yuraMarkerIcon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)
             cameraPositionState.animate(
-                update = com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(yuraLocation, 11.3f),
+                update = com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(yuraLocation, 12f),
                 durationMs = 3_000,
+            )
+            delay(1_000)
+            cameraPositionState.animate(
+                update = com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(
+                    LatLng(-16.34, -71.62),
+                    10.4f,
+                ),
+                durationMs = 2_500,
             )
         }
     }
@@ -173,4 +182,5 @@ private fun Context.bitmapFromVector(@DrawableRes drawableId: Int): Bitmap {
         drawable.draw(canvas)
     }
 }
+
 
