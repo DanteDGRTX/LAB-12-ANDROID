@@ -1,6 +1,6 @@
 # LAB 12 — Bloques de código
 
-Dependencias y fragmentos correspondientes a la pantalla del mapa. Las polilíneas son líneas que conectan puntos en el orden indicado; se usan para ilustrar recorridos, no representan rutas calculadas.
+Los ejemplos siguientes corresponden a la app de Google Maps con Jetpack Compose. La polilínea es ilustrativa: une los puntos dados en orden y no calcula una ruta vial.
 
 ## Bloque de código 1 — Dependencias Maps Compose
 
@@ -19,24 +19,54 @@ dependencies {
 }
 ```
 
-## Bloque de código 2 — Pantalla y posición inicial
+## Bloque de código 2 — Crear el mapa Compose
 
 ```kotlin
+package com.example.lab12_maps.ui
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.maps.android.compose.rememberMarkerState
+
 private val arequipaLocation = LatLng(-16.4040102, -71.559611)
-private val yuraLocation = LatLng(-16.2520984, -71.6836503)
 
 @Composable
 fun MapScreen() {
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(arequipaLocation, 12f)
     }
-    // El contenido del mapa se dibuja dentro de GoogleMap.
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState,
+        ) {
+            Marker(
+                state = rememberMarkerState(position = arequipaLocation),
+                title = "Arequipa, Perú",
+            )
+        }
+    }
 }
 ```
 
 ## Bloque de código 3 — MainActivity
 
 ```kotlin
+package com.example.lab12_maps
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import com.example.lab12_maps.ui.MapScreen
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,22 +79,32 @@ class MainActivity : ComponentActivity() {
 
 ## Bloque de código 4 — Icono personalizado del marcador
 
-El recurso vectorial `res/drawable/ic_mountain_marker.xml` se convierte a `Bitmap` y se asigna al marcador.
+El recurso vectorial está en `res/drawable/ic_mountain_marker.xml`; se convierte a un bitmap y se usa en el marcador de Arequipa.
 
 ```kotlin
-val mountainMarkerIcon = remember(context) {
-    BitmapDescriptorFactory.fromBitmap(
-        context.bitmapFromVector(R.drawable.ic_mountain_marker)
-    )
+val mountainMarkerIcon = remember { mutableStateOf<BitmapDescriptor?>(null) }
+
+GoogleMap(
+    cameraPositionState = cameraPositionState,
+    onMapLoaded = { mapLoaded = true },
+) {
+    mountainMarkerIcon.value?.let { icon ->
+        Marker(
+            state = rememberMarkerState(position = arequipaLocation),
+            icon = icon,
+            anchor = Offset(0.5f, 1f),
+            title = "Arequipa, Perú",
+        )
+    }
 }
 
-Marker(
-    state = rememberMarkerState(position = arequipaLocation),
-    icon = mountainMarkerIcon,
-    anchor = Offset(0.5f, 1f),
-    title = "Arequipa, Perú",
-    snippet = "Marcador personalizado con icono de montaña",
-)
+LaunchedEffect(mapLoaded) {
+    if (mapLoaded) {
+        mountainMarkerIcon.value = BitmapDescriptorFactory.fromBitmap(
+            context.bitmapFromVector(R.drawable.ic_mountain_marker)
+        )
+    }
+}
 ```
 
 ## Bloque de código 5 — Varios marcadores
@@ -87,7 +127,9 @@ pointsOfInterest.forEach { point ->
 }
 ```
 
-## Bloque de código 6 — Animación de cámara a Yura
+## Bloque de código 6 — Control de cámara hacia Yura
+
+La cámara espera a que cargue el mapa, va a Yura, muestra el recorrido y termina en una vista cercana de las áreas del centro de Arequipa.
 
 ```kotlin
 LaunchedEffect(mapLoaded) {
@@ -108,16 +150,30 @@ LaunchedEffect(mapLoaded) {
         )
         delay(1_000)
         cameraPositionState.animate(
-            update = CameraUpdateFactory.newLatLngZoom(LatLng(-16.416, -71.522), 13f),
+            update = CameraUpdateFactory.newLatLngZoom(LatLng(-16.416, -71.522), 14f),
             durationMs = 2_500,
         )
     }
 }
 ```
 
-## Bloque de código 7 — Polígonos
+## Bloque de código 7 — Polígonos de Arequipa
 
 ```kotlin
+private val mallAventuraPolygon = listOf(
+    LatLng(-16.432292, -71.509145),
+    LatLng(-16.432757, -71.509626),
+    LatLng(-16.433013, -71.509310),
+    LatLng(-16.432566, -71.508853),
+)
+
+private val parqueLambramaniPolygon = listOf(
+    LatLng(-16.422704, -71.530830),
+    LatLng(-16.422920, -71.531340),
+    LatLng(-16.423264, -71.531110),
+    LatLng(-16.423050, -71.530600),
+)
+
 private val plazaDeArmasPolygon = listOf(
     LatLng(-16.398866, -71.536961),
     LatLng(-16.398744, -71.536529),
@@ -125,17 +181,12 @@ private val plazaDeArmasPolygon = listOf(
     LatLng(-16.399299, -71.536721),
 )
 
-Polygon(
-    points = plazaDeArmasPolygon,
-    strokeColor = Color(0xFFB42318),
-    fillColor = Color(0x44F04438),
-    strokeWidth = 12f,
-)
+Polygon(points = plazaDeArmasPolygon, strokeColor = Color(0xFFB42318), fillColor = Color(0x88F04438), strokeWidth = 12f)
+Polygon(points = parqueLambraniPolygon, strokeColor = Color(0xFF175CD3), fillColor = Color(0x883B82F6), strokeWidth = 12f)
+Polygon(points = mallAventuraPolygon, strokeColor = Color(0xFF6941C6), fillColor = Color(0x889B8AFB), strokeWidth = 12f)
 ```
 
-El proyecto contiene también los polígonos de Parque Lambramani y Mall Aventura, con estilos diferenciados.
-
-## Bloque de código 8 — Polilínea a Yura
+## Bloque de código 8 — Polilínea de Yura a Arequipa
 
 ```kotlin
 Polyline(
@@ -150,7 +201,7 @@ Polyline(
 )
 ```
 
-## Bloque de código 9 — Polilínea entre puntos del sur
+## Bloque de código 9 — Polilínea entre puntos de interés
 
 ```kotlin
 Polyline(
@@ -164,8 +215,19 @@ Polyline(
 )
 ```
 
-La API `Polyline` de Maps Compose conecta puntos consecutivos en el orden de `points`; consulta la [documentación de polilíneas de Google Maps](https://developers.google.com/maps/documentation/android-sdk/shapes#polylines) y el [ejemplo del SDK para Android](https://developers.google.com/maps/documentation/android-sdk/examples/polyline).
+## Bloque de código 10 — Convertir vector drawable a bitmap
 
+```kotlin
+private fun Context.bitmapFromVector(@DrawableRes drawableId: Int): Bitmap {
+    val drawable = requireNotNull(ContextCompat.getDrawable(this, drawableId))
+    val width = drawable.intrinsicWidth.coerceAtLeast(1)
+    val height = drawable.intrinsicHeight.coerceAtLeast(1)
+    return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { bitmap ->
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, canvas.width, canvas.height)
+        drawable.draw(canvas)
+    }
+}
+```
 
-
-
+Maps Compose provides composables for polylines and polygons. See the [Google Maps Compose project documentation](https://github.com/googlemaps/android-maps-compose) and Google's [polylines and shapes documentation](https://developers.google.com/maps/documentation/android-sdk/shapes#polylines).
