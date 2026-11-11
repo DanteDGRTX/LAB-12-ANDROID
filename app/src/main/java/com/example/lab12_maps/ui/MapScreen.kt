@@ -8,7 +8,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -64,30 +67,39 @@ fun MapScreen() {
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(arequipaLocation, 12f)
     }
-    val mountainMarkerIcon = remember(context) {
-        BitmapDescriptorFactory.fromBitmap(context.bitmapFromVector(R.drawable.ic_mountain_marker))
-    }
+    var mapLoaded by remember { mutableStateOf(false) }
+    var mountainMarkerIcon by remember { mutableStateOf<BitmapDescriptor?>(null) }
+    var yuraMarkerIcon by remember { mutableStateOf<BitmapDescriptor?>(null) }
 
-    // Start in Arequipa, then animate north-west to Yura.
-    LaunchedEffect(Unit) {
-        cameraPositionState.animate(
-            update = com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(yuraLocation, 11.3f),
-            durationMs = 3_000,
-        )
+    // Maps Compose requires the map to be loaded before camera operations and map SDK icons.
+    LaunchedEffect(mapLoaded) {
+        if (mapLoaded) {
+            mountainMarkerIcon = BitmapDescriptorFactory.fromBitmap(
+                context.bitmapFromVector(R.drawable.ic_mountain_marker)
+            )
+            yuraMarkerIcon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)
+            cameraPositionState.animate(
+                update = com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(yuraLocation, 11.3f),
+                durationMs = 3_000,
+            )
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
+            onMapLoaded = { mapLoaded = true },
         ) {
-            Marker(
-                state = rememberMarkerState(position = arequipaLocation),
-                icon = mountainMarkerIcon,
-                anchor = Offset(0.5f, 1f),
-                title = "Arequipa, Perú",
-                snippet = "Marcador personalizado con icono de montaña",
-            )
+            mountainMarkerIcon?.let { icon ->
+                Marker(
+                    state = rememberMarkerState(position = arequipaLocation),
+                    icon = icon,
+                    anchor = Offset(0.5f, 1f),
+                    title = "Arequipa, Perú",
+                    snippet = "Marcador personalizado con icono de montaña",
+                )
+            }
 
             pointsOfInterest.forEach { point ->
                 Marker(
@@ -97,12 +109,14 @@ fun MapScreen() {
                 )
             }
 
-            Marker(
-                state = rememberMarkerState(position = yuraLocation),
-                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE),
-                title = "Yura",
-                snippet = "Destino de la animación de cámara",
-            )
+            yuraMarkerIcon?.let { icon ->
+                Marker(
+                    state = rememberMarkerState(position = yuraLocation),
+                    icon = icon,
+                    title = "Yura",
+                    snippet = "Destino de la animación de cámara",
+                )
+            }
 
             Polygon(
                 points = plazaDeArmasPolygon,
@@ -159,3 +173,4 @@ private fun Context.bitmapFromVector(@DrawableRes drawableId: Int): Bitmap {
         drawable.draw(canvas)
     }
 }
+
