@@ -82,13 +82,13 @@ class MainActivity : ComponentActivity() {
 El recurso vectorial está en `res/drawable/ic_mountain_marker.xml`; se convierte a un bitmap y se usa en el marcador de Arequipa.
 
 ```kotlin
-val mountainMarkerIcon = remember { mutableStateOf<BitmapDescriptor?>(null) }
+var mountainMarkerIcon by remember { mutableStateOf<BitmapDescriptor?>(null) }
 
 GoogleMap(
     cameraPositionState = cameraPositionState,
     onMapLoaded = { mapLoaded = true },
 ) {
-    mountainMarkerIcon.value?.let { icon ->
+    mountainMarkerIcon?.let { icon ->
         Marker(
             state = rememberMarkerState(position = arequipaLocation),
             icon = icon,
@@ -100,7 +100,7 @@ GoogleMap(
 
 LaunchedEffect(mapLoaded) {
     if (mapLoaded) {
-        mountainMarkerIcon.value = BitmapDescriptorFactory.fromBitmap(
+        mountainMarkerIcon = BitmapDescriptorFactory.fromBitmap(
             context.bitmapFromVector(R.drawable.ic_mountain_marker)
         )
     }
@@ -182,7 +182,7 @@ private val plazaDeArmasPolygon = listOf(
 )
 
 Polygon(points = plazaDeArmasPolygon, strokeColor = Color(0xFFB42318), fillColor = Color(0x88F04438), strokeWidth = 12f)
-Polygon(points = parqueLambraniPolygon, strokeColor = Color(0xFF175CD3), fillColor = Color(0x883B82F6), strokeWidth = 12f)
+Polygon(points = parqueLambramaniPolygon, strokeColor = Color(0xFF175CD3), fillColor = Color(0x883B82F6), strokeWidth = 12f)
 Polygon(points = mallAventuraPolygon, strokeColor = Color(0xFF6941C6), fillColor = Color(0x889B8AFB), strokeWidth = 12f)
 ```
 
@@ -231,3 +231,4 @@ private fun Context.bitmapFromVector(@DrawableRes drawableId: Int): Bitmap {
 ```
 
 Maps Compose provides composables for polylines and polygons. See the [Google Maps Compose project documentation](https://github.com/googlemaps/android-maps-compose) and Google's [polylines and shapes documentation](https://developers.google.com/maps/documentation/android-sdk/shapes#polylines).
+
