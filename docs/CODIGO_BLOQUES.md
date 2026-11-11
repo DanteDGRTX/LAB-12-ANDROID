@@ -297,7 +297,7 @@ Permisos declarados en `AndroidManifest.xml`:
 Dependencia en `app/build.gradle.kts`:
 
 ```kotlin
-implementation("com.google.android.gms:play-services-location:21.4.0")
+implementation("com.google.android.gms:play-services-location:21.3.0")
 ```
 
 Solicitud del permiso en contexto y obtención de la posición actual:
