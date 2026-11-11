@@ -282,3 +282,58 @@ fun MapScreen() {
 ```
 
 La documentación del [Maps SDK para Android](https://developers.google.com/maps/documentation/android-sdk/configure-map) describe los tipos de mapa y sus diferencias. En este proyecto se actualizan mediante las propiedades de `GoogleMap` de [Maps Compose](https://github.com/googlemaps/android-maps-compose).
+
+## Puntos adicionales — Ubicación actual con Google Play Services Location
+
+Se integró el SDK de ubicación de Google Play Services (`play-services-location`). Android recomienda solicitar los permisos de ubicación en el momento en que la persona usa la función; desde Android 12 hay que aceptar tanto permiso aproximado como preciso. Para una sola lectura de la posición actual se utiliza `FusedLocationProviderClient.getCurrentLocation`, que puede reutilizar una ubicación reciente o calcular una nueva. El punto azul de Google Maps se activa solo tras conceder permiso y la cámara se centra en la lectura recibida.
+
+Permisos declarados en `AndroidManifest.xml`:
+
+```xml
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+```
+
+Dependencia en `app/build.gradle.kts`:
+
+```kotlin
+implementation("com.google.android.gms:play-services-location:21.4.0")
+```
+
+Solicitud del permiso en contexto y obtención de la posición actual:
+
+```kotlin
+val locationPermissionLauncher = rememberLauncherForActivityResult(
+    ActivityResultContracts.RequestMultiplePermissions(),
+) { permissions ->
+    hasLocationPermission = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+        permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+    if (hasLocationPermission) requestCurrentLocation()
+}
+
+val locateUser = {
+    if (context.hasLocationPermission()) {
+        requestCurrentLocation()
+    } else {
+        locationPermissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+            ),
+        )
+    }
+}
+
+@SuppressLint("MissingPermission")
+private fun FusedLocationProviderClient.requestSingleCurrentLocation(
+    onResult: (Location?) -> Unit,
+    onFailure: (Exception) -> Unit,
+) {
+    val cancellation = CancellationTokenSource()
+    getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cancellation.token)
+        .addOnSuccessListener { location -> onResult(location) }
+        .addOnFailureListener { error -> onFailure(error) }
+}
+```
+
+Referencias oficiales: [solicitar permisos de ubicación en Android](https://developer.android.com/develop/sensors-and-location/location/permissions/runtime), [FusedLocationProviderClient](https://developers.google.com/android/reference/com/google/android/gms/location/FusedLocationProviderClient) y [ubicación en Maps SDK for Android](https://developers.google.com/maps/documentation/android-sdk/location).
