@@ -345,8 +345,8 @@ private fun FusedLocationProviderClient.requestSingleCurrentLocation(
 ) {
     val cancellation = CancellationTokenSource()
     getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cancellation.token)
-        .addOnSuccessListener(onResult)
-        .addOnFailureListener(onFailure)
+        .addOnSuccessListener { location -> onResult(location) }
+        .addOnFailureListener { error -> onFailure(error) }
 }
 
 private fun Context.bitmapFromVector(@DrawableRes drawableId: Int): Bitmap {
