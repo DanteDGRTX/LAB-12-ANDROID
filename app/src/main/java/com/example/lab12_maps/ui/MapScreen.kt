@@ -103,7 +103,7 @@ fun MapScreen() {
             cameraPositionState.animate(
                 update = com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(
                     LatLng(-16.416, -71.522),
-                    13f,
+                    14f,
                 ),
                 durationMs = 2_500,
             )
@@ -146,20 +146,20 @@ fun MapScreen() {
             Polygon(
                 points = plazaDeArmasPolygon,
                 strokeColor = Color(0xFFB42318),
-                fillColor = Color(0x44F04438),
-                strokeWidth = 5f,
+                fillColor = Color(0x88F04438),
+                strokeWidth = 12f,
             )
             Polygon(
                 points = parqueLambramaniPolygon,
                 strokeColor = Color(0xFF175CD3),
-                fillColor = Color(0x443B82F6),
-                strokeWidth = 5f,
+                fillColor = Color(0x883B82F6),
+                strokeWidth = 12f,
             )
             Polygon(
                 points = mallAventuraPolygon,
                 strokeColor = Color(0xFF6941C6),
-                fillColor = Color(0x449B8AFB),
-                strokeWidth = 5f,
+                fillColor = Color(0x889B8AFB),
+                strokeWidth = 12f,
             )
 
             // Example route connecting Yura to central Arequipa.
@@ -198,6 +198,7 @@ private fun Context.bitmapFromVector(@DrawableRes drawableId: Int): Bitmap {
         drawable.draw(canvas)
     }
 }
+
 
 
 
