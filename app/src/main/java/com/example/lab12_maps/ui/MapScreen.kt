@@ -1,12 +1,23 @@
 package com.example.lab12_maps.ui
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
+import android.content.pm.PackageManager
+import android.location.Location
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,10 +33,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import com.example.lab12_maps.R
+import com.google.android.gms.location.CancellationTokenSource
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
@@ -39,6 +57,7 @@ import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
 import kotlinx.coroutines.delay
+import java.util.Locale
 
 private val arequipaLocation = LatLng(-16.4040102, -71.559611)
 private val yuraLocation = LatLng(-16.2520984, -71.6836503)
@@ -90,6 +109,67 @@ fun MapScreen() {
     var mapLoaded by remember { mutableStateOf(false) }
     var selectedMapType by remember { mutableStateOf(MapType.NORMAL) }
     var mapTypeMenuExpanded by remember { mutableStateOf(false) }
+    var hasLocationPermission by remember { mutableStateOf(context.hasLocationPermission()) }
+    var userLocation by remember { mutableStateOf<LatLng?>(null) }
+    var locationDetails by remember { mutableStateOf<String?>(null) }
+    var isFindingLocation by remember { mutableStateOf(false) }
+    val fusedLocationClient = remember(context) {
+        LocationServices.getFusedLocationProviderClient(context)
+    }
+
+    fun requestCurrentLocation() {
+        isFindingLocation = true
+        fusedLocationClient.requestSingleCurrentLocation(
+            onResult = { location ->
+                isFindingLocation = false
+                if (location == null) {
+                    Toast.makeText(context, "No se obtuvo una ubicación. Activa la ubicación del emulador e inténtalo de nuevo.", Toast.LENGTH_LONG).show()
+                } else {
+                    userLocation = LatLng(location.latitude, location.longitude)
+                    locationDetails = String.format(
+                        Locale.getDefault(),
+                        "Lat %.5f, Lon %.5f (±%.0f m)",
+                        location.latitude,
+                        location.longitude,
+                        location.accuracy,
+                    )
+                }
+            },
+            onFailure = { error ->
+                isFindingLocation = false
+                Toast.makeText(context, "Error de ubicación: " + (error.localizedMessage ?: "inténtalo de nuevo"), Toast.LENGTH_LONG).show()
+            },
+        )
+    }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) { permissions ->
+        hasLocationPermission = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (hasLocationPermission) requestCurrentLocation()
+        else Toast.makeText(context, "Concede el permiso de ubicación para usar esta función.", Toast.LENGTH_LONG).show()
+    }
+
+    val locateUser = {
+        if (context.hasLocationPermission()) {
+            hasLocationPermission = true
+            requestCurrentLocation()
+        } else {
+            locationPermissionLauncher.launch(
+                arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION),
+            )
+        }
+    }
+
+    LaunchedEffect(userLocation) {
+        userLocation?.let { location ->
+            cameraPositionState.animate(
+                update = CameraUpdateFactory.newLatLngZoom(location, 16f),
+                durationMs = 1_200,
+            )
+        }
+    }
     var mountainMarkerIcon by remember { mutableStateOf<BitmapDescriptor?>(null) }
     var yuraMarkerIcon by remember { mutableStateOf<BitmapDescriptor?>(null) }
 
@@ -135,7 +215,10 @@ fun MapScreen() {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
-            properties = MapProperties(mapType = selectedMapType),
+            properties = MapProperties(
+                mapType = selectedMapType,
+                isMyLocationEnabled = hasLocationPermission,
+            ),
             onMapLoaded = { mapLoaded = true },
         ) {
             mountainMarkerIcon?.let { icon ->
@@ -208,31 +291,62 @@ fun MapScreen() {
             )
         }
 
-        Box(
+        Column(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .statusBarsPadding()
                 .padding(16.dp),
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Button(onClick = { mapTypeMenuExpanded = true }) {
-                Text("Tipo de mapa: ${mapTypeOptions.first { it.type == selectedMapType }.label}")
+            Button(onClick = locateUser, enabled = !isFindingLocation) {
+                Text(if (isFindingLocation) "Buscando ubicación…" else "Mi ubicación")
             }
-            DropdownMenu(
-                expanded = mapTypeMenuExpanded,
-                onDismissRequest = { mapTypeMenuExpanded = false },
-            ) {
-                mapTypeOptions.forEach { option ->
-                    DropdownMenuItem(
-                        text = { Text(option.label) },
-                        onClick = {
-                            selectedMapType = option.type
-                            mapTypeMenuExpanded = false
-                        },
+            locationDetails?.let { details ->
+                Surface(shape = RoundedCornerShape(8.dp), tonalElevation = 3.dp) {
+                    Text(
+                        text = details,
+                        modifier = Modifier.padding(10.dp).widthIn(max = 260.dp),
+                        style = MaterialTheme.typography.bodySmall,
                     )
+                }
+            }
+            Box {
+                Button(onClick = { mapTypeMenuExpanded = true }) {
+                    Text("Tipo de mapa: ${mapTypeOptions.first { it.type == selectedMapType }.label}")
+                }
+                DropdownMenu(
+                    expanded = mapTypeMenuExpanded,
+                    onDismissRequest = { mapTypeMenuExpanded = false },
+                ) {
+                    mapTypeOptions.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(option.label) },
+                            onClick = {
+                                selectedMapType = option.type
+                                mapTypeMenuExpanded = false
+                            },
+                        )
+                    }
                 }
             }
         }
     }
+}
+
+private fun Context.hasLocationPermission(): Boolean =
+    ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+@SuppressLint("MissingPermission")
+private fun FusedLocationProviderClient.requestSingleCurrentLocation(
+    onResult: (Location?) -> Unit,
+    onFailure: (Exception) -> Unit,
+) {
+    val cancellation = CancellationTokenSource()
+    getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cancellation.token)
+        .addOnSuccessListener(onResult)
+        .addOnFailureListener(onFailure)
 }
 
 private fun Context.bitmapFromVector(@DrawableRes drawableId: Int): Bitmap {
