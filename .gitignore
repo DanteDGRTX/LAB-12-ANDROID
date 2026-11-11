@@ -9,3 +9,6 @@
 .cxx/
 secrets.properties
 
+
+.kotlin/
+**/build/
