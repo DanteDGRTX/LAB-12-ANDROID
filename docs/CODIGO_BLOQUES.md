@@ -106,6 +106,11 @@ LaunchedEffect(mapLoaded) {
             update = CameraUpdateFactory.newLatLngZoom(arequipaLocation, 11.7f),
             durationMs = 2_500,
         )
+        delay(1_000)
+        cameraPositionState.animate(
+            update = CameraUpdateFactory.newLatLngZoom(LatLng(-16.416, -71.522), 13f),
+            durationMs = 2_500,
+        )
     }
 }
 ```
@@ -160,5 +165,6 @@ Polyline(
 ```
 
 La API `Polyline` de Maps Compose conecta puntos consecutivos en el orden de `points`; consulta la [documentación de polilíneas de Google Maps](https://developers.google.com/maps/documentation/android-sdk/shapes#polylines) y el [ejemplo del SDK para Android](https://developers.google.com/maps/documentation/android-sdk/examples/polyline).
+
 
 
