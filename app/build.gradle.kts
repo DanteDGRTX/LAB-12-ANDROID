@@ -27,6 +27,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -49,5 +50,6 @@ dependencies {
     implementation("com.google.maps.android:maps-compose-widgets:$mapsComposeVersion")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
+
 
 
