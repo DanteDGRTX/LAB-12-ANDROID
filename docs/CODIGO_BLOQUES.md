@@ -129,7 +129,7 @@ Polygon(
     points = plazaDeArmasPolygon,
     strokeColor = Color(0xFFB42318),
     fillColor = Color(0x44F04438),
-    strokeWidth = 5f,
+    strokeWidth = 12f,
 )
 ```
 
@@ -165,6 +165,7 @@ Polyline(
 ```
 
 La API `Polyline` de Maps Compose conecta puntos consecutivos en el orden de `points`; consulta la [documentación de polilíneas de Google Maps](https://developers.google.com/maps/documentation/android-sdk/shapes#polylines) y el [ejemplo del SDK para Android](https://developers.google.com/maps/documentation/android-sdk/examples/polyline).
+
 
 
 
